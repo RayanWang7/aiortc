@@ -103,7 +103,12 @@ class H264PayloadDescriptor:
 
 class H264Decoder(Decoder):
     def __init__(self) -> None:
-        self.codec = av.CodecContext.create("h264", "r")
+        try:
+            self.codec = av.CodecContext.create("h264_cuvid", "r")
+            if self.codec is None:
+                self.codec = av.CodecContext.create("h264", "r")
+        except Exception:
+            self.codec = av.CodecContext.create("h264", "r")
 
     def decode(self, encoded_frame: JitterFrame) -> List[Frame]:
         try:
@@ -136,7 +141,7 @@ def create_encoder_context(
         "tune": "zerolatency",  # does nothing using h264_omx
     }
     codec.open()
-    return codec, codec_name == "h264_omx"
+    return codec, codec_name == "h264_nvenc"
 
 
 class H264Encoder(Encoder):
@@ -282,7 +287,7 @@ class H264Encoder(Encoder):
         if self.codec is None:
             try:
                 self.codec, self.codec_buffering = create_encoder_context(
-                    "h264_omx", frame.width, frame.height, bitrate=self.target_bitrate
+                    "h264_nvenc", frame.width, frame.height, bitrate=self.target_bitrate
                 )
             except Exception:
                 self.codec, self.codec_buffering = create_encoder_context(
